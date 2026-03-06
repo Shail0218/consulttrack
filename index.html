@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConsultTrack – Attendance Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:linear-gradient(135deg,#0f0c1a,#1a1228,#0f1a2a);font-family:'Segoe UI',system-ui,sans-serif;color:#e8e0f5;padding-bottom:60px}
+  input,select,button{font-family:inherit}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:pointer}
+  input[type=color]{padding:0;cursor:pointer;border:none}
+  select option{background:#1a1228}
+  button{cursor:pointer;transition:opacity 0.15s}
+  button:hover{opacity:0.85}
+  .toast{position:fixed;top:20px;right:20px;z-index:1000;padding:10px 22px;border-radius:10px;font-weight:600;font-size:14px;box-shadow:0 4px 24px rgba(0,0,0,0.4);animation:fadeIn 0.2s;pointer-events:none}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .header{background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);padding:24px 24px 0}
+  .header-inner{max-width:760px;margin:0 auto}
+  .logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap}
+  .tab{padding:9px 16px;border:none;background:transparent;color:#9b8ec4;border-radius:8px 8px 0 0;font-weight:500;font-size:14px;border-bottom:2px solid transparent}
+  .tab.active{background:rgba(124,58,237,0.18);color:#a78bfa;font-weight:700;border-bottom:2px solid #7c3aed}
+  .main{max-width:760px;margin:0 auto;padding:24px 16px 0}
+  .card{background:rgba(255,255,255,0.05);border-radius:16px;border:1px solid rgba(255,255,255,0.09);padding:20px;margin-bottom:16px}
+  .label{font-size:12px;color:#9b8ec4;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+  .input{width:100%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#e8e0f5;font-size:14px}
+  .input:focus{outline:none;border-color:#7c3aed}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .status-row{display:flex;gap:8px}
+  .status-btn{flex:1;padding:10px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);background:transparent;color:#9b8ec4;font-weight:700;font-size:13px}
+  .status-btn.present.active{border-color:#22c55e;background:rgba(34,197,94,0.15);color:#22c55e}
+  .status-btn.absent.active{border-color:#ff4d6d;background:rgba(255,77,109,0.15);color:#ff4d6d}
+  .status-btn.off.active{border-color:#f59e0b;background:rgba(245,158,11,0.15);color:#f59e0b}
+  .status-btn.cl.active{border-color:#a78bfa;background:rgba(167,139,250,0.15);color:#a78bfa}
+  .office-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .office-chip{padding:8px 14px;border-radius:20px;border:2px solid rgba(255,255,255,0.1);background:transparent;color:#9b8ec4;font-weight:500;font-size:13px;display:flex;align-items:center;gap:6px}
+  .office-chip.active{font-weight:700}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .primary-btn{width:100%;padding:12px;border-radius:12px;border:none;color:#fff;font-weight:700;font-size:15px;background:linear-gradient(135deg,#7c3aed,#2563eb)}
+  .absent-btn{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+  .off-btn{background:linear-gradient(135deg,#d97706,#b45309)}
+  .cl-btn{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
+  .record-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:12px;padding:11px 14px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.07)}
+  .record-row.absent-row{border-color:rgba(255,77,109,0.15)}
+  .record-row.off-row{border-color:rgba(245,158,11,0.15)}
+  .record-row.cl-row{border-color:rgba(167,139,250,0.15)}
+  .del-btn{background:none;border:none;color:rgba(255,77,109,0.35);font-size:18px;padding:2px;line-height:1;flex-shrink:0}
+  .del-btn:hover{color:#ff4d6d}
+  .section-title{font-size:13px;color:#9b8ec4;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+  .month-header{font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+  .month-block{margin-bottom:28px}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+  .stat-card{border-radius:14px;padding:14px 12px}
+  .stat-icon{font-size:20px;margin-bottom:4px}
+  .stat-val{font-size:22px;font-weight:800}
+  .stat-lbl{font-size:11px;color:#9b8ec4;margin-top:2px}
+  .bar-bg{height:6px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;margin:8px 0 4px}
+  .bar-fill{height:100%;border-radius:3px;transition:width 0.5s}
+  .join-badge{display:flex;align-items:center;gap:16px;margin-top:8px;padding:8px 12px;border-radius:8px}
+  .filter-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+  .filter-sel{padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#e8e0f5;font-size:13px}
+  .empty{text-align:center;color:#9b8ec4;padding:60px 0;font-size:15px}
+  .notion-badge{margin-left:auto;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:4px 12px;font-size:12px;color:#22c55e;font-weight:600;white-space:nowrap}
+  .office-card{background:rgba(255,255,255,0.04);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+  .edit-input{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#e8e0f5;font-size:13px;width:100%}
+  .edit-input:focus{outline:none;border-color:#7c3aed}
+  .save-btn{padding:7px 16px;border-radius:8px;background:#22c55e;border:none;color:#fff;font-weight:700;font-size:13px}
+  .cancel-btn{padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.1);border:none;color:#e8e0f5;font-size:13px}
+  .edit-btn{background:rgba(255,255,255,0.07);border:none;color:#c4b5fd;border-radius:7px;padding:5px 10px;font-size:12px}
+  .export-section{margin-top:20px;padding:16px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:14px}
+  @media(max-width:500px){
+    .stat-grid{grid-template-columns:1fr 1fr}
+    .grid2{grid-template-columns:1fr}
+    .status-row{flex-wrap:wrap}
+    .status-btn{min-width:calc(50% - 4px)}
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast" style="display:none"></div>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">📋</div>
+      <div>
+        <div style="font-size:20px;font-weight:700">ConsultTrack</div>
+        <div style="font-size:12px;color:#9b8ec4;margin-top:1px" id="subtitle">Loading...</div>
+      </div>
+      <div class="notion-badge">✓ Notion imported</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" onclick="setView('log')">📝 Log</button>
+      <button class="tab" onclick="setView('history')">📅 History</button>
+      <button class="tab" onclick="setView('stats')">📊 Stats</button>
+      <button class="tab" onclick="setView('offices')">🏢 Offices</button>
+    </div>
+  </div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const NOTION_RECORDS = [{"id":"136","date":"2026-03-05","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"137","date":"2026-03-05","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"134","date":"2026-03-04","officeId":"3","hours":8,"note":"Absent","status":"Absent"},{"id":"135","date":"2026-03-04","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"132","date":"2026-03-02","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"131","date":"2026-03-01","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"130","date":"2026-02-28","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"133","date":"2026-02-28","officeId":"3","hours":8,"note":"Absent","status":"Absent"},{"id":"128","date":"2026-02-27","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"129","date":"2026-02-27","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"126","date":"2026-02-26","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"127","date":"2026-02-26","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"123","date":"2026-02-25","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"124","date":"2026-02-25","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"122","date":"2026-02-24","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"125","date":"2026-02-24","officeId":"3","hours":8,"note":"Absent","status":"Absent"},{"id":"120","date":"2026-02-23","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"121","date":"2026-02-23","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"118","date":"2026-02-22","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"119","date":"2026-02-22","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"117","date":"2026-02-21","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"115","date":"2026-02-20","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"116","date":"2026-02-20","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"113","date":"2026-02-19","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"114","date":"2026-02-19","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"111","date":"2026-02-18","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"112","date":"2026-02-18","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"109","date":"2026-02-17","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"110","date":"2026-02-17","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"107","date":"2026-02-16","officeId":"1","hours":8,"note":"Okay me 3:17 se start","status":"Present"},{"id":"108","date":"2026-02-16","officeId":"3","hours":8,"note":"Okay me 3:17 se start","status":"Present"},{"id":"106","date":"2026-02-15","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"104","date":"2026-02-14","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"105","date":"2026-02-14","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"102","date":"2026-02-13","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"103","date":"2026-02-13","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"100","date":"2026-02-12","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"101","date":"2026-02-12","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"98","date":"2026-02-11","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"99","date":"2026-02-11","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"96","date":"2026-02-10","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"97","date":"2026-02-10","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"94","date":"2026-02-09","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"95","date":"2026-02-09","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"93","date":"2026-02-08","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"91","date":"2026-02-07","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"92","date":"2026-02-07","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"89","date":"2026-02-06","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"90","date":"2026-02-06","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"87","date":"2026-02-05","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"88","date":"2026-02-05","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"85","date":"2026-02-04","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"86","date":"2026-02-04","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"82","date":"2026-02-03","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"83","date":"2026-02-03","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"81","date":"2026-02-02","officeId":"3","hours":8,"note":"Absent","status":"Absent"},{"id":"84","date":"2026-02-02","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"79","date":"2026-02-01","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"76","date":"2026-01-31","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"77","date":"2026-01-31","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"74","date":"2026-01-30","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"75","date":"2026-01-30","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"78","date":"2026-01-29","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"80","date":"2026-01-29","officeId":"3","hours":8,"note":"Absent","status":"Absent"},{"id":"72","date":"2026-01-28","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"73","date":"2026-01-28","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"69","date":"2026-01-27","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"70","date":"2026-01-27","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"71","date":"2026-01-27","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"68","date":"2026-01-26","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"67","date":"2026-01-25","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"64","date":"2026-01-24","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"65","date":"2026-01-24","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"66","date":"2026-01-24","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"61","date":"2026-01-23","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"62","date":"2026-01-23","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"63","date":"2026-01-23","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"58","date":"2026-01-22","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"59","date":"2026-01-22","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"60","date":"2026-01-22","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"56","date":"2026-01-21","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"57","date":"2026-01-21","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"54","date":"2026-01-20","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"55","date":"2026-01-20","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"52","date":"2026-01-19","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"53","date":"2026-01-19","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"51","date":"2026-01-18","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"49","date":"2026-01-17","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"50","date":"2026-01-17","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"47","date":"2026-01-16","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"48","date":"2026-01-16","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"45","date":"2026-01-15","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"46","date":"2026-01-15","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"44","date":"2026-01-14","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"42","date":"2026-01-13","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"43","date":"2026-01-13","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"40","date":"2026-01-12","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"41","date":"2026-01-12","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"39","date":"2026-01-11","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"36","date":"2026-01-10","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"37","date":"2026-01-10","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"38","date":"2026-01-10","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"33","date":"2026-01-09","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"34","date":"2026-01-09","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"35","date":"2026-01-09","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"30","date":"2026-01-08","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"31","date":"2026-01-08","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"32","date":"2026-01-08","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"27","date":"2026-01-07","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"28","date":"2026-01-07","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"29","date":"2026-01-07","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"24","date":"2026-01-06","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"25","date":"2026-01-06","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"26","date":"2026-01-06","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"1","date":"2026-01-05","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"2","date":"2026-01-05","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"3","date":"2026-01-05","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"4","date":"2026-01-04","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"5","date":"2026-01-03","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"6","date":"2026-01-03","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"7","date":"2026-01-03","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"21","date":"2026-01-02","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"22","date":"2026-01-02","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"23","date":"2026-01-02","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"18","date":"2026-01-01","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"19","date":"2026-01-01","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"20","date":"2026-01-01","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"15","date":"2025-12-31","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"16","date":"2025-12-31","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"17","date":"2025-12-31","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"12","date":"2025-12-30","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"13","date":"2025-12-30","officeId":"2","hours":8,"note":"","status":"Present"},{"id":"14","date":"2025-12-30","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"10","date":"2025-12-29","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"11","date":"2025-12-29","officeId":"3","hours":8,"note":"","status":"Present"},{"id":"8","date":"2025-12-15","officeId":"1","hours":8,"note":"","status":"Present"},{"id":"9","date":"2025-12-15","officeId":"2","hours":8,"note":"","status":"Present"}];
+
+const NOTION_OFFICES = [
+  {id:"1",name:"Dausa",color:"#F97B4F",location:"",joinDate:"2025-11-17"},
+  {id:"2",name:"Fortis",color:"#4F9CF9",location:"",joinDate:"2025-12-15"},
+  {id:"3",name:"Okay",color:"#22c55e",location:"",joinDate:"2025-12-29"}
+];
+
+const RKEY = "ct-records-v3";
+const OKEY = "ct-offices-v3";
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let records = [], offices = [], view = "log";
+let selOffice = "1", selDate = today(), selStatus = "Present", selHours = "8", selNote = "";
+let filterOff = "all", filterMonth = "all";
+let editOffId = null;
+let newName="", newColor="#4F9CF9", newLoc="", newJoinDate="";
+
+function today(){ return new Date().toISOString().split("T")[0]; }
+function fmtDate(d){ return new Date(d+"T00:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"}); }
+function monthKey(d){ return d.slice(0,7); }
+function monthLabel(m){ return new Date(m+"-01").toLocaleDateString("en-US",{month:"long",year:"numeric"}); }
+function getOff(id){ return offices.find(o=>o.id===id)||{name:"?",color:"#999"}; }
+function statusColor(s){ return s==="Present"?"#22c55e":s==="Absent"?"#ff4d6d":s==="Off"?"#f59e0b":"#a78bfa"; }
+function statusIcon(s){ return s==="Present"?"✓":s==="Absent"?"✗":s==="Off"?"🌙":"📋"; }
+
+function save(){
+  try{ localStorage.setItem(RKEY,JSON.stringify(records)); localStorage.setItem(OKEY,JSON.stringify(offices)); }catch(e){}
+}
+function load(){
+  try{
+    const r=localStorage.getItem(RKEY); records=r?JSON.parse(r):JSON.parse(JSON.stringify(NOTION_RECORDS));
+    const o=localStorage.getItem(OKEY); offices=o?JSON.parse(o):JSON.parse(JSON.stringify(NOTION_OFFICES));
+  }catch(e){ records=JSON.parse(JSON.stringify(NOTION_RECORDS)); offices=JSON.parse(JSON.stringify(NOTION_OFFICES)); }
+  if(!offices.length) offices=JSON.parse(JSON.stringify(NOTION_OFFICES));
+  if(selOffice==="" && offices.length) selOffice=offices[0].id;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type="success"){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.style.display="block";
+  t.style.background=type==="error"?"#ff4d6d":type==="info"?"#6c63ff":"#22c55e";
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.style.display="none",2500);
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function setView(v){
+  view=v;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>{ if(t.textContent.toLowerCase().includes(v.slice(0,3))) t.classList.add("active"); });
+  render();
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function logAttendance(){
+  if(!selOffice){ showToast("Select an office","error"); return; }
+  if(records.find(r=>r.date===selDate&&r.officeId===selOffice)){ showToast("Already logged for this date & office","error"); return; }
+  records.unshift({id:Date.now().toString(),date:selDate,officeId:selOffice,hours:selStatus==="Present"?(parseFloat(selHours)||8):0,note:selNote.trim(),status:selStatus});
+  records.sort((a,b)=>b.date.localeCompare(a.date));
+  save(); selNote=""; render();
+  showToast(selStatus==="Present"?"✓ Attendance logged!":selStatus==="Absent"?"Absence marked!":selStatus==="Off"?"Day off recorded!":"Casual leave recorded!");
+}
+
+function deleteRec(id){ records=records.filter(r=>r.id!==id); save(); render(); showToast("Removed","info"); }
+
+function addOffice(){
+  if(!newName.trim()){ showToast("Enter office name","error"); return; }
+  offices.push({id:Date.now().toString(),name:newName.trim(),color:newColor,location:newLoc.trim(),joinDate:newJoinDate});
+  newName=""; newLoc=""; newColor="#4F9CF9"; newJoinDate="";
+  save(); render(); showToast("Office added!");
+}
+
+function saveEdit(id){
+  const nm=document.getElementById("e-name").value.trim();
+  const lc=document.getElementById("e-loc").value.trim();
+  const cl=document.getElementById("e-color").value;
+  const jd=document.getElementById("e-join").value;
+  offices=offices.map(o=>o.id===id?{...o,name:nm||o.name,location:lc,color:cl,joinDate:jd}:o);
+  editOffId=null; save(); render(); showToast("Saved!");
+}
+
+function removeOffice(id){ offices=offices.filter(o=>o.id!==id); records=records.filter(r=>r.officeId!==id); save(); render(); showToast("Removed","info"); }
+
+// ── RENDER HELPERS ────────────────────────────────────────────────────────────
+function recordRowHTML(r){
+  const o=getOff(r.officeId);
+  const sc=statusColor(r.status);
+  const cls=r.status==="Absent"?"absent-row":r.status==="Off"?"off-row":r.status==="CL"?"cl-row":"";
+  const noteText = r.note && r.note!=="Absent" ? ` · ${r.note}` : "";
+  return `<div class="record-row ${cls}">
+    <span class="dot" style="background:${sc}"></span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600">${o.name} <span style="color:${sc};font-size:11px">${statusIcon(r.status)} ${r.status}</span></div>
+      <div style="font-size:12px;color:#9b8ec4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fmtDate(r.date)}${noteText}</div>
+    </div>
+    ${r.status==="Present"?`<span style="font-size:13px;color:#c4b5fd;font-weight:600;margin-right:6px">${r.hours}h</span>`:""}
+    <button class="del-btn" onclick="deleteRec('${r.id}')">×</button>
+  </div>`;
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function renderLog(){
+  const statusBtns = ["Present","Absent","Off","CL"].map(s=>{
+    const sc=statusColor(s);
+    return `<button class="status-btn ${s.toLowerCase()} ${selStatus===s?"active":""}" onclick="selStatus='${s}';render()">${statusIcon(s)} ${s}</button>`;
+  }).join("");
+
+  const officeChips = offices.map(o=>{
+    const active = selOffice===o.id;
+    return `<button class="office-chip ${active?"active":""}" style="${active?`border-color:${o.color};background:${o.color}22;color:${o.color}`:""}" onclick="selOffice='${o.id}';render()">
+      <span class="dot" style="background:${o.color}"></span>${o.name}
+    </button>`;
+  }).join("");
+
+  const recent = records.slice(0,5).map(recordRowHTML).join("") || `<div class="empty" style="padding:20px 0">No records yet. Log your first attendance!</div>`;
+
+  const btnClass = selStatus==="Absent"?"absent-btn":selStatus==="Off"?"off-btn":selStatus==="CL"?"cl-btn":"";
+  const btnLabel = selStatus==="Present"?"✓ Log Attendance":selStatus==="Absent"?"✗ Mark Absent":selStatus==="Off"?"🌙 Mark Day Off":"📋 Mark Casual Leave";
+
+  return `
+  <div class="card">
+    <div style="font-size:16px;font-weight:700;margin-bottom:18px;color:#c4b5fd">Log Attendance</div>
+    <div class="grid2">
+      <div>
+        <label class="label">Date</label>
+        <input class="input" type="date" value="${selDate}" onchange="selDate=this.value">
+      </div>
+      <div>
+        <label class="label">Status</label>
+        <div class="status-row">${statusBtns}</div>
+      </div>
+    </div>
+    ${selStatus==="Present"?`<div style="margin-bottom:14px"><label class="label">Hours Worked</label><input class="input" type="number" value="${selHours}" min="1" max="24" step="0.5" onchange="selHours=this.value"></div>`:""}
+    <div style="margin-bottom:14px">
+      <label class="label">Office</label>
+      <div class="office-chips">${officeChips}</div>
+    </div>
+    <div style="margin-bottom:18px">
+      <label class="label">Note (optional)</label>
+      <input class="input" type="text" value="${selNote.replace(/"/g,'&quot;')}" placeholder="e.g. Client meeting, late start..." oninput="selNote=this.value">
+    </div>
+    <button class="primary-btn ${btnClass}" onclick="logAttendance()">${btnLabel}</button>
+  </div>
+  <div class="section-title">Recent</div>
+  ${recent}`;
+}
+
+function renderHistory(){
+  const allMonths = [...new Set(records.map(r=>monthKey(r.date)))].sort((a,b)=>b.localeCompare(a));
+  const offOpts = offices.map(o=>`<option value="${o.id}" ${filterOff===o.id?"selected":""}>${o.name}</option>`).join("");
+  const mOpts = allMonths.map(m=>`<option value="${m}" ${filterMonth===m?"selected":""}>${monthLabel(m)}</option>`).join("");
+
+  const filtered = records.filter(r=>(filterOff==="all"||r.officeId===filterOff)&&(filterMonth==="all"||monthKey(r.date)===filterMonth));
+  if(!filtered.length) return `<div class="filter-row">
+    <select class="filter-sel" onchange="filterOff=this.value;render()"><option value="all">All Offices</option>${offOpts}</select>
+    <select class="filter-sel" onchange="filterMonth=this.value;render()"><option value="all">All Months</option>${mOpts}</select>
+  </div><div class="empty">No records found.</div>`;
+
+  const grouped={};
+  filtered.forEach(r=>{ const k=monthKey(r.date); if(!grouped[k])grouped[k]=[]; grouped[k].push(r); });
+  const months=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+
+  const blocks=months.map(m=>{
+    const mr=grouped[m];
+    const p=mr.filter(r=>r.status==="Present").length;
+    const ab=mr.filter(r=>r.status==="Absent").length;
+    const off=mr.filter(r=>r.status==="Off").length;
+    const cl=mr.filter(r=>r.status==="CL").length;
+    const hrs=mr.filter(r=>r.status==="Present").reduce((s,r)=>s+r.hours,0);
+    const tags=[
+      p?`<span style="color:#22c55e">${p}P</span>`:"",
+      ab?`<span style="color:#ff4d6d">${ab}A</span>`:"",
+      off?`<span style="color:#f59e0b">${off}Off</span>`:"",
+      cl?`<span style="color:#a78bfa">${cl}CL</span>`:""
+    ].filter(Boolean).join(" · ");
+    return `<div class="month-block">
+      <div class="month-header">${monthLabel(m)} <span style="color:#6b5fa0;font-weight:400">· ${tags} · ${hrs}h</span></div>
+      ${mr.map(recordRowHTML).join("")}
+    </div>`;
+  }).join("");
+
+  return `<div class="filter-row">
+    <select class="filter-sel" onchange="filterOff=this.value;render()"><option value="all">All Offices</option>${offOpts}</select>
+    <select class="filter-sel" onchange="filterMonth=this.value;render()"><option value="all">All Months</option>${mOpts}</select>
+  </div>${blocks}`;
+}
+
+function renderStats(){
+  const allMonths=[...new Set(records.map(r=>monthKey(r.date)))].sort((a,b)=>b.localeCompare(a));
+  const mOpts=allMonths.map(m=>`<option value="${m}" ${filterMonth===m?"selected":""}>${monthLabel(m)}</option>`).join("");
+  const filtered=records.filter(r=>filterMonth==="all"||monthKey(r.date)===filterMonth);
+  const present=filtered.filter(r=>r.status==="Present");
+  const absent=filtered.filter(r=>r.status==="Absent");
+  const off=filtered.filter(r=>r.status==="Off");
+  const cl=filtered.filter(r=>r.status==="CL");
+  const totalDays=present.length, totalHrs=present.reduce((s,r)=>s+r.hours,0);
+
+  const summaryCards=[
+    ["📅","Present",totalDays,"#7c3aed"],
+    ["⏱️","Hours",`${totalHrs}h`,"#2563eb"],
+    ["✗","Absent",absent.length,"#dc2626"],
+    ["🌙","Off/CL",off.length+cl.length,"#f59e0b"]
+  ].map(([ic,lb,vl,cl2])=>`<div class="stat-card" style="background:${cl2}18;border:1px solid ${cl2}44">
+    <div class="stat-icon">${ic}</div>
+    <div class="stat-val">${vl}</div>
+    <div class="stat-lbl">${lb}</div>
+  </div>`).join("");
+
+  const officeRows=offices.map(o=>{
+    const recs=present.filter(r=>r.officeId===o.id);
+    const days=recs.length, hrs=recs.reduce((s,r)=>s+r.hours,0);
+    const absN=absent.filter(r=>r.officeId===o.id).length;
+    const offN=off.filter(r=>r.officeId===o.id).length;
+    const clN=cl.filter(r=>r.officeId===o.id).length;
+    const pct=totalDays>0?(days/totalDays)*100:0;
+    return `<div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.07)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="dot" style="background:${o.color};width:12px;height:12px"></span>
+          <span style="font-weight:600;font-size:15px">${o.name}</span>
+        </div>
+        <div style="text-align:right;font-size:13px">
+          <span style="font-weight:700;color:${o.color};font-size:16px">${days}d</span>
+          <span style="color:#9b8ec4"> · ${hrs}h</span>
+          ${absN?`<span style="color:#ff4d6d"> · ${absN}A</span>`:""}
+          ${offN+clN?`<span style="color:#f59e0b"> · ${offN+clN} Off/CL</span>`:""}
+        </div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${o.color},${o.color}99)"></div></div>
+      <div style="font-size:11px;color:#9b8ec4">${pct.toFixed(0)}% of present days</div>
+    </div>`;
+  }).join("");
+
+  return `<div style="margin-bottom:16px">
+    <select class="filter-sel" onchange="filterMonth=this.value;render()"><option value="all">All Time</option>${mOpts}</select>
+  </div>
+  <div class="stat-grid">${summaryCards}</div>
+  <div class="section-title">By Office</div>
+  ${officeRows}`;
+}
+
+function renderOffices(){
+  const officeCards=offices.map(o=>{
+    const cnt=records.filter(r=>r.officeId===o.id&&r.status==="Present").length;
+    const joinLabel=o.joinDate?new Date(o.joinDate+"T00:00:00").toLocaleDateString("en-US",{day:"numeric",month:"long",year:"numeric"}):"";
+    const tenure=o.joinDate?Math.floor((new Date()-new Date(o.joinDate+"T00:00:00"))/(86400000)):0;
+
+    if(editOffId===o.id){
+      return `<div class="office-card" style="border:1px solid ${o.color}44">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <input id="e-name" class="edit-input" value="${o.name.replace(/"/g,'&quot;')}" placeholder="Office name">
+          <input id="e-loc" class="edit-input" value="${(o.location||'').replace(/"/g,'&quot;')}" placeholder="Location">
+        </div>
+        <div style="margin-bottom:10px">
+          <label class="label">Joining Date</label>
+          <input id="e-join" class="edit-input" type="date" value="${o.joinDate||''}">
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input id="e-color" type="color" value="${o.color}" style="width:32px;height:28px;border-radius:6px;border:none;cursor:pointer">
+          <button class="save-btn" onclick="saveEdit('${o.id}')">Save</button>
+          <button class="cancel-btn" onclick="editOffId=null;render()">Cancel</button>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="office-card" style="border:1px solid ${o.color}33">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="dot" style="background:${o.color};width:14px;height:14px"></span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${o.name}</div>
+          ${o.location?`<div style="font-size:12px;color:#9b8ec4">${o.location}</div>`:""}
+        </div>
+        <div style="font-size:12px;color:#9b8ec4;margin-right:8px">${cnt} days</div>
+        <button class="edit-btn" onclick="editOffId='${o.id}';render()">Edit</button>
+        <button class="del-btn" onclick="removeOffice('${o.id}')">×</button>
+      </div>
+      ${joinLabel?`<div class="join-badge" style="background:${o.color}0f;border:1px solid ${o.color}22">
+        <div><div style="font-size:11px;color:#9b8ec4;margin-bottom:2px">JOINED</div><div style="font-size:13px;font-weight:600;color:${o.color}">📅 ${joinLabel}</div></div>
+        <div style="border-left:1px solid rgba(255,255,255,0.1);padding-left:16px"><div style="font-size:11px;color:#9b8ec4;margin-bottom:2px">TENURE</div><div style="font-size:13px;font-weight:600">${tenure} days</div></div>
+      </div>`:""}
+    </div>`;
+  }).join("");
+
+  return `<div class="card">
+    <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#c4b5fd">Add New Office</div>
+    <div class="grid2" style="margin-bottom:10px">
+      <input class="input" placeholder="Office name" value="${newName.replace(/"/g,'&quot;')}" oninput="newName=this.value">
+      <input class="input" placeholder="Location (optional)" value="${newLoc.replace(/"/g,'&quot;')}" oninput="newLoc=this.value">
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="label">Joining Date</label>
+      <input class="input" type="date" value="${newJoinDate}" onchange="newJoinDate=this.value">
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="font-size:12px;color:#9b8ec4">Color:</span>
+      <input type="color" value="${newColor}" onchange="newColor=this.value" style="width:36px;height:30px;border-radius:6px;border:none;cursor:pointer">
+      <span style="font-size:13px;font-weight:600;color:${newColor}">${newName||"Preview"}</span>
+    </div>
+    <button onclick="addOffice()" style="padding:10px 22px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;color:#fff;font-weight:700;font-size:14px">+ Add Office</button>
+  </div>
+  <div class="section-title">Your Offices (${offices.length})</div>
+  ${officeCards}
+  <div class="export-section">
+    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:8px">💾 Export / Backup</div>
+    <div style="font-size:13px;color:#9b8ec4;margin-bottom:12px">Download your data as a JSON backup file.</div>
+    <button onclick="exportData()" style="padding:9px 20px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;color:#fff;font-weight:700;font-size:13px;margin-right:8px">⬇ Export Data</button>
+    <button onclick="document.getElementById('imp').click()" style="padding:9px 20px;border-radius:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#e8e0f5;font-weight:600;font-size:13px">⬆ Import Data</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
+  </div>`;
+}
+
+function exportData(){
+  const data={records,offices,exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`consulttrack-backup-${today()}.json`; a.click();
+  showToast("Data exported!");
+}
+
+function importData(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.records) records=data.records;
+      if(data.offices) offices=data.offices;
+      save(); render(); showToast(`Imported ${records.length} records!`);
+    }catch(err){ showToast("Invalid file","error"); }
+  };
+  reader.readAsText(file);
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function render(){
+  const presentCount=records.filter(r=>r.status==="Present").length;
+  document.getElementById("subtitle").textContent=`${presentCount} days present · ${offices.map(o=>o.name).join(", ")}`;
+
+  let html="";
+  if(view==="log") html=renderLog();
+  else if(view==="history") html=renderHistory();
+  else if(view==="stats") html=renderStats();
+  else if(view==="offices") html=renderOffices();
+  document.getElementById("main").innerHTML=html;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+load();
+if(offices.length) selOffice=offices[0].id;
+render();
+</script>
+</body>
+</html>
